@@ -237,6 +237,57 @@
   }
   .empty-state .big{ font-size:15px; color:var(--white); font-weight:700; margin-bottom:6px; }
 
+  /* ---------- CONTACT SECTION ---------- */
+  .contact-section{ margin-top: 6px; }
+  .contact-cards{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+  .contact-card{
+    display:flex; align-items:center; gap:12px;
+    background: var(--card);
+    border: 1.5px dashed var(--yellow);
+    border-radius: 13px 15px 12px 16px;
+    padding: 13px 14px;
+    text-decoration:none;
+    transition: transform .12s ease, background .15s ease;
+  }
+  .contact-card:active{ transform: scale(0.98); background: #241f19; }
+  .contact-icon{
+    flex-shrink:0;
+    width:38px; height:38px;
+    border-radius: 50%;
+    background: rgba(217,70,59,0.14);
+    color: var(--nonveg);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .contact-icon svg{ width:18px; height:18px; }
+  .contact-text{ flex:1; min-width:0; }
+  .contact-label{ font-size:10px; letter-spacing:1.2px; color: var(--muted); font-weight:700; }
+  .contact-number{ font-size:16px; color: var(--white); font-weight:800; margin-top:2px; letter-spacing:0.3px; }
+  .contact-call-btn{
+    flex-shrink:0;
+    background: var(--yellow);
+    color:#1a1508;
+    font-family:'Work Sans', sans-serif;
+    font-weight:800;
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform: translateX(-50%) translateY(20px);
+    background: var(--yellow); color:#1a1508;
+    font-weight:700; font-size:12.5px;
+    padding: 11px 18px; border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    opacity:0; pointer-events:none;
+    transition: opacity .2s ease, transform .2s ease;
+    z-index: 300;
+    max-width: 88%;
+    text-align:center;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
   /* ---------- FOOTER ---------- */
   footer.app-footer{
     text-align:center;
@@ -556,6 +607,32 @@ function EmptyState(){
   </div>`;
 }
 
+function ContactSection(){
+  const numbers = [
+    { label: "Order & Inquiry", number: "7764955719" },
+    { label: "Order & Inquiry", number: "8292443337" },
+  ];
+  return `
+  <section class="menu-section contact-section">
+    <div class="brush-wrap"><div class="brush-banner">CONTACT US</div></div>
+    <div class="section-sub">For orders, table booking or any questions — call us directly.</div>
+    <div class="contact-cards">
+      ${numbers.map((n, i) => `
+        <a class="contact-card" href="tel:+91${n.number}" data-phone="+91${n.number}">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div class="contact-text">
+            <div class="contact-label">${n.label} ${numbers.length > 1 ? (i+1) : ""}</div>
+            <div class="contact-number">+91 ${n.number}</div>
+          </div>
+          <div class="contact-call-btn">CALL NOW</div>
+        </a>
+      `).join("")}
+    </div>
+  </section>`;
+}
+
 function Footer(){
   return `<footer class="app-footer">
     <div class="fname">THE HUNGER HOUSE</div>
@@ -575,9 +652,11 @@ function render(){
       ${FilterTabs()}
       ${CategoryNav()}
       ${anyVisible ? sections : EmptyState()}
+      ${ContactSection()}
       ${Footer()}
     </div>
     ${state.showModal ? IntroModal() : ""}
+    <div class="toast" id="toast">Copied</div>
   `;
 
   document.body.style.overflow = state.showModal ? "hidden" : "";
@@ -608,6 +687,36 @@ function attachEvents(){
       }
     });
   });
+  document.querySelectorAll(".contact-card").forEach(card=>{
+    card.addEventListener("click", (e)=>{
+      const phone = card.dataset.phone;
+      const canDial = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                       (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+      if(canDial){
+        // Let the tel: link do its job — the device dialer takes over.
+        showToast(`Calling ${phone}…`);
+        return;
+      }
+      // Desktop / any environment that can't place calls: copy the number instead.
+      e.preventDefault();
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(phone)
+          .then(()=> showToast(`${phone} copied to clipboard`))
+          .catch(()=> showToast(`Call us at ${phone}`));
+      }else{
+        showToast(`Call us at ${phone}`);
+      }
+    });
+  });
+}
+
+function showToast(msg){
+  const toast = document.getElementById("toast");
+  if(!toast) return;
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> toast.classList.remove("show"), 2200);
 }
 
 render();
