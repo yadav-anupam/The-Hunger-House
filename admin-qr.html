@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Hunger House — QR Code Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg: #151210;
+    --card: #1e1a17;
+    --card-border: #2c2620;
+    --yellow: #F6C51A;
+    --yellow-deep: #E0AD0E;
+    --white: #F6F2E8;
+    --muted: #A79E90;
+    --veg: #3FA34D;
+    --nonveg: #D9463B;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 5%, rgba(255,255,255,0.025), transparent 40%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+    color: var(--white);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .shell{ max-width: 480px; margin: 0 auto; padding: 22px 18px 60px; }
+
+  .eyebrow{ font-size:10.5px; letter-spacing:2.5px; color: var(--muted); margin-bottom:6px; }
+  .page-title{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 30px; letter-spacing: 1px; color: var(--yellow);
+    line-height:1;
+  }
+  .page-sub{ font-size:12.5px; color:var(--muted); margin-top:6px; line-height:1.5; }
+  .page-sub .accent{ color: var(--nonveg); font-weight:700; }
+
+  /* ---- config card ---- */
+  .panel{
+    background: var(--card);
+    border: 1.5px dashed var(--card-border);
+    border-radius: 13px 15px 12px 16px;
+    padding: 16px 16px 18px;
+    margin-top: 20px;
+  }
+  .field-label{
+    font-size:10.5px; font-weight:800; letter-spacing:1.5px; color: var(--muted);
+    margin-bottom:8px;
+  }
+  .url-input{
+    width:100%;
+    background: #131110;
+    border: 1.5px solid var(--card-border);
+    border-radius: 9px;
+    color: var(--white);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    padding: 11px 12px;
+    outline:none;
+    transition: border-color .15s ease;
+  }
+  .url-input:focus{ border-color: var(--yellow); }
+  .field-hint{ font-size:10.5px; color:var(--muted); margin-top:9px; line-height:1.5; }
+  .field-hint b{ color: var(--white); }
+
+  /* ---- QR card (the printable / downloadable artifact) ---- */
+  .qr-card-outer{ margin-top: 22px; }
+  .qr-card{
+    background: var(--card);
+    border: 2px dashed var(--yellow);
+    border-radius: 16px 22px 16px 22px;
+    padding: 26px 20px 22px;
+    text-align:center;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.35);
+    position:relative;
+  }
+  .qr-card .accent-dot{
+    position:absolute; top:14px; right:16px;
+    width:8px; height:8px; border-radius:50%;
+    background: var(--nonveg);
+  }
+  .qr-brand{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 26px; letter-spacing:1.5px; color: var(--yellow);
+  }
+  .qr-instruction{
+    font-size: 11.5px; font-weight:800; letter-spacing:2px; color: var(--white);
+    margin-top:4px;
+  }
+  .qr-white-box{
+    background:#FFFFFF;
+    border-radius: 12px;
+    padding: 16px;
+    width: fit-content;
+    margin: 16px auto 14px;
+    line-height:0;
+  }
+  .qr-white-box canvas{ display:block; width: 200px; height:200px; image-rendering:pixelated; }
+  .qr-tag{ font-size: 11.5px; color: var(--muted); letter-spacing:1.5px; }
+  .qr-loc{ font-size: 11px; color: var(--muted); margin-top:3px; }
+
+  /* ---- actions ---- */
+  .actions{
+    display:grid; grid-template-columns: 1fr 1fr; gap:10px;
+    margin-top: 20px;
+  }
+  .action-btn{
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    padding: 12px 10px;
+    border-radius: 10px;
+    font-family:'Work Sans', sans-serif;
+    font-weight:700;
+    font-size: 12.5px;
+    letter-spacing:0.3px;
+    cursor:pointer;
+    border: 1.5px solid var(--card-border);
+    background: var(--card);
+    color: var(--white);
+    transition: transform .1s ease, border-color .15s ease, background .15s ease;
+  }
+  .action-btn svg{ width:15px; height:15px; flex-shrink:0; }
+  .action-btn:active{ transform: scale(0.97); }
+  .action-btn.primary{
+    background: var(--yellow); color:#1a1508; border-color: var(--yellow-deep);
+    grid-column: 1 / -1;
+  }
+  .action-btn.primary:hover{ background: var(--yellow-deep); }
+  .action-btn:not(.primary):hover{ border-color: var(--yellow); }
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform: translateX(-50%) translateY(20px);
+    background: var(--yellow); color:#1a1508;
+    font-weight:700; font-size:12.5px;
+    padding: 10px 18px; border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    opacity:0; pointer-events:none;
+    transition: opacity .2s ease, transform .2s ease;
+    z-index: 500;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
+  .note{
+    margin-top:22px; font-size:11px; color:var(--muted); line-height:1.6;
+    border-top: 1px solid var(--card-border); padding-top:14px;
+  }
+  .note b{ color:var(--white); }
+
+  @media (min-width: 720px){
+    .shell{ max-width: 640px; }
+  }
+
+  /* ---- print ---- */
+  @media print{
+    body{ background: #FFFFFF !important; }
+    .shell > *:not(.print-area-wrap){ display:none !important; }
+    .print-area-wrap{ display:flex !important; align-items:center; justify-content:center; min-height:100vh; }
+    .qr-card{ box-shadow:none; }
+    .toast{ display:none !important; }
+  }
+  .print-area-wrap{ display:none; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="eyebrow">RESTAURANT ADMIN</div>
+  <div class="page-title">QR CODE MANAGER</div>
+  <div class="page-sub">
+    One universal QR code for the whole restaurant. The same code is printed on every table &mdash;
+    <span class="accent">no per-table variants, no login required.</span>
+  </div>
+
+  <div class="panel">
+    <div class="field-label">MENU URL</div>
+    <input class="url-input" id="menu-url" type="text" value="https://YOUR-DOMAIN.com/menu" spellcheck="false" />
+    <div class="field-hint">
+      This is the exact link encoded in the QR. <b>Do not add ?table= or any query
+      parameters</b> &mdash; every table uses this same link and lands on the same public menu.
+    </div>
+  </div>
+
+  <div class="qr-card-outer">
+    <div class="qr-card" id="qr-card">
+      <span class="accent-dot"></span>
+      <div class="qr-brand">THE HUNGER HOUSE</div>
+      <div class="qr-instruction">SCAN TO VIEW MENU</div>
+      <div class="qr-white-box">
+        <canvas id="qr-canvas" width="200" height="200"></canvas>
+      </div>
+      <div class="qr-tag">Eat &bull; Chill &bull; Repeat</div>
+      <div class="qr-loc">Saroj Vatika, Mirzamurad, Varanasi</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="action-btn" id="btn-copy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+      Copy Menu URL
+    </button>
+    <button class="action-btn" id="btn-print">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><rect x="6" y="14" width="12" height="8"/><path d="M6 18H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-2"/></svg>
+      Print QR Card
+    </button>
+    <button class="action-btn" id="btn-svg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      Download SVG
+    </button>
+    <button class="action-btn primary" id="btn-png">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      Download PNG
+    </button>
+  </div>
+
+  <button id="btn-open-fallback" style="width:100%;background:none;border:none;color:var(--muted);font-size:11.5px;text-decoration:underline;margin-top:10px;cursor:pointer;padding:6px;">
+    Download not working? Open QR image to save manually
+  </button>
+
+  <div class="note">
+    <b>Printing tip:</b> the QR sits on a plain white background inside the card with no
+    texture, gradient, or overlay on top of it &mdash; this keeps it scanning reliably on
+    any phone, even under warm restaurant lighting. Print at a size where the QR itself
+    is at least 3&times;3&nbsp;cm.
+  </div>
+
+  <div class="print-area-wrap"></div>
+</div>
+
+<div class="toast" id="toast">Copied menu link</div>
+
+<script>
+/* ===================== QR RENDERING ===================== */
+// Renders using kazuhikoarase/qrcode-generator (loaded as global `qrcode`).
+// We read raw module data (isDark grid) ourselves so the canvas render and the
+// SVG export are pixel-identical, and the QR itself stays pure black-on-white
+// with a clean quiet zone — no gradients, textures, or shadows inside it.
+
+const QUIET_ZONE_MODULES = 4;
+
+function buildQR(url){
+  const qr = qrcode(0, "M"); // type 0 = auto-size, M = medium error correction
+  qr.addData(url);
+  qr.make();
+  return qr;
+}
+
+function drawQRToCanvas(qr, canvas, cellPx){
+  const count = qr.getModuleCount();
+  const total = count + QUIET_ZONE_MODULES * 2;
+  const size = total * cellPx;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = "#0B0B0B";
+  for(let r=0; r<count; r++){
+    for(let c=0; c<count; c++){
+      if(qr.isDark(r, c)){
+        ctx.fillRect((c + QUIET_ZONE_MODULES) * cellPx, (r + QUIET_ZONE_MODULES) * cellPx, cellPx, cellPx);
+      }
+    }
+  }
+  return size;
+}
+
+function buildQRSvgString(qr, cellPx){
+  const count = qr.getModuleCount();
+  const total = count + QUIET_ZONE_MODULES * 2;
+  const size = total * cellPx;
+  let rects = "";
+  for(let r=0; r<count; r++){
+    for(let c=0; c<count; c++){
+      if(qr.isDark(r, c)){
+        rects += `<rect x="${(c + QUIET_ZONE_MODULES) * cellPx}" y="${(r + QUIET_ZONE_MODULES) * cellPx}" width="${cellPx}" height="${cellPx}"/>`;
+      }
+    }
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">` +
+         `<rect width="${size}" height="${size}" fill="#FFFFFF"/>` +
+         `<g fill="#0B0B0B">${rects}</g></svg>`;
+}
+
+/* ===================== APP WIRING ===================== */
+const urlInput = document.getElementById("menu-url");
+const canvas = document.getElementById("qr-canvas");
+let currentQR = null;
+
+function refreshQR(){
+  if(typeof qrcode === "undefined"){
+    showToast("QR library failed to load — check your internet connection");
+    return;
+  }
+  const url = urlInput.value.trim() || "https://YOUR-DOMAIN.com/menu";
+  currentQR = buildQR(url);
+  drawQRToCanvas(currentQR, canvas, 6); // 6px modules on-screen, crisp at 200px display size
+}
+
+function showToast(msg){
+  const toast = document.getElementById("toast");
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> toast.classList.remove("show"), 1800);
+}
+
+function triggerDownload(href, filename){
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+urlInput.addEventListener("input", refreshQR);
+
+document.getElementById("btn-copy").addEventListener("click", async ()=>{
+  const url = urlInput.value.trim();
+  try{
+    await navigator.clipboard.writeText(url);
+    showToast("Copied menu link");
+  }catch(e){
+    showToast("Couldn't copy — select and copy manually");
+  }
+});
+
+document.getElementById("btn-print").addEventListener("click", ()=>{
+  window.print();
+});
+
+document.getElementById("btn-svg").addEventListener("click", ()=>{
+  if(!currentQR){ showToast("QR not ready yet — check your connection"); return; }
+  try{
+    const svgString = buildQRSvgString(currentQR, 10); // higher-res cell size for a crisp vector/print file
+    const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgString);
+    triggerDownload(dataUrl, "hunger-house-menu-qr.svg");
+    showToast("SVG downloaded");
+  }catch(err){
+    console.error(err);
+    openFallback(buildQRSvgString(currentQR, 10), "image/svg+xml");
+  }
+});
+
+document.getElementById("btn-png").addEventListener("click", ()=>{
+  if(!currentQR){ showToast("QR not ready yet — check your connection"); return; }
+  try{
+    const exportCanvas = document.createElement("canvas");
+    drawQRToCanvas(currentQR, exportCanvas, 20); // high-res export for clean printing
+    const dataUrl = exportCanvas.toDataURL("image/png");
+    triggerDownload(dataUrl, "hunger-house-menu-qr.png");
+    showToast("PNG downloaded — check your Downloads folder");
+  }catch(err){
+    console.error(err);
+    showToast("Download blocked by browser — opening image instead");
+    const exportCanvas = document.createElement("canvas");
+    drawQRToCanvas(currentQR, exportCanvas, 20);
+    window.open(exportCanvas.toDataURL("image/png"), "_blank");
+  }
+});
+
+document.getElementById("btn-open-fallback").addEventListener("click", ()=>{
+  if(!currentQR){ showToast("QR not ready yet — check your connection"); return; }
+  const exportCanvas = document.createElement("canvas");
+  drawQRToCanvas(currentQR, exportCanvas, 20);
+  const win = window.open("", "_blank");
+  if(win){
+    win.document.write(
+      `<title>Hunger House QR</title>` +
+      `<body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;">` +
+      `<div style="text-align:center;font-family:sans-serif;color:#fff;">` +
+      `<img src="${exportCanvas.toDataURL('image/png')}" style="width:280px;height:280px;image-rendering:pixelated;border-radius:8px;" />` +
+      `<p style="margin-top:14px;font-size:14px;">Press and hold (or right-click) the image, then choose "Save Image"</p>` +
+      `</div></body>`
+    );
+  }else{
+    showToast("Pop-up blocked — allow pop-ups for this page and try again");
+  }
+});
+
+function openFallback(content, mime){
+  const win = window.open("", "_blank");
+  if(win){
+    win.document.write(`<pre style="white-space:pre-wrap;word-break:break-all;font-family:monospace;padding:20px;">${content.replace(/</g,"&lt;")}</pre>`);
+  }
+}
+
+refreshQR();
+</script>
+</body>
+</html>
